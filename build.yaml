@@ -1,0 +1,41 @@
+name: Publish .NET
+
+on:
+  push:
+    branches: [ main ]
+    
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+        source-url: https://nuget.pkg.github.com/steeldynamics/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build -c Release
+      
+    - name: Test
+      run: dotnet test -c Release --no-build --verbosity normal
+    
+    - name: Generate Nuget Package
+      run: dotnet pack --no-build -c Release -o .
+      
+    - name: Publish Package
+      run: dotnet nuget push *.nupkg
+      
+    - name: Archive SdiServiceSchedulerLib production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: SdiServiceSchedulerLib
+        path: SdiServiceSchedulerLib.*.*nupkg
